@@ -28,7 +28,7 @@ void login() {
 }
 
 void mainPortal() {
-  double balance = 1000; // Example balance, you can change it as needed
+  double balance = 1000; // balance changed to double for more accurate calculations
   print('Welcome to the ATM Portal!');
   print("This project is for educational purposes only.");
 
@@ -38,7 +38,9 @@ void mainPortal() {
     print("1. Check Balance");
     print("2. Deposit Money");
     print("3. Withdraw Money");
-    print("4. Exit");
+    print("4. Pay Bills");
+    print("5. Transfer Money");
+    print("6. Exit");
 
     int? choice = int.tryParse(stdin.readLineSync()!);
     switch (choice) {
@@ -52,6 +54,12 @@ void mainPortal() {
         balance = WithdrawMoney(balance);
         break;
       case 4:
+        balance = PayBills(balance);
+        break;
+      case 5:
+        balance = TransferMoney(balance);
+        break;
+      case 6:
         print("Exiting...");
         return;
       default:
@@ -126,4 +134,107 @@ double DepositMoney(double balance) {
 
 double WithdrawMoney(double balance) {
   return handleTransaction(balance, false);
+}
+
+double PayBills(double balance) {
+  print("Pay Bills");
+  print("Enter the bill amount to pay (or press X and enter to cancel):");
+  while (true) {
+    String? input = stdin.readLineSync();
+    if (input == null) continue;
+    input = input.trim();
+    if (input.toLowerCase() == 'x') {
+      print("Bill payment cancelled. Returning to main menu.");
+      break;
+    }
+    double? amount = double.tryParse(input);
+    if (amount == null || amount <= 0) {
+      print("INVALID INPUT.");
+      continue;
+    }
+
+    // select biller category
+    List<String> categories = ['Utilities', 'Internet', 'Mobile', 'Other'];
+    print("Select biller category:");
+    for (int i = 0; i < categories.length; i++) {
+      print("${i + 1}. ${categories[i]}");
+    }
+    int? catChoice = int.tryParse(stdin.readLineSync() ?? '');
+    if (catChoice == null || catChoice < 1 || catChoice > categories.length) {
+      print("Invalid category. Cancelling bill payment.");
+      break;
+    }
+    String selectedCategory = categories[catChoice - 1];
+
+    // select biller
+    Map<String, List<String>> billers = {
+      'Utilities': ['Meralco', 'Maynilad', 'LPG'],
+      'Internet': ['PLDT', 'Converge', 'Globe', 'Sky'],
+      'Mobile': ['Globe', 'Dito', 'Smart'],
+      'Other': ['Biller1', 'Biller2'],
+    };
+    List<String> billerList = billers[selectedCategory]!;
+    print("Select desired biller:");
+    for (int i = 0; i < billerList.length; i++) {
+      print("${i + 1}. ${billerList[i]}");
+    }
+    int? billerChoice = int.tryParse(stdin.readLineSync() ?? '');
+    if (billerChoice == null || billerChoice < 1 || billerChoice > billerList.length) {
+      print("Invalid biller. Cancelling bill payment.");
+      break;
+    }
+    String selectedBiller = billerList[billerChoice - 1];
+
+    // Confirm payment
+    print("You are about to pay \$${amount} to $selectedBiller under $selectedCategory category.");
+    print("Type 'yes' to confirm or any other key to cancel:");
+    String? confirm = stdin.readLineSync();
+    if (confirm == null || confirm.toLowerCase() != 'yes') {
+      print("Bill payment cancelled. Returning to main menu.");
+      break;
+    }
+    if (amount > balance) {
+      print("INSUFFICIENT FUNDS. Your current balance is: \$${balance}");
+      continue;
+    }
+    balance -= amount;
+    print("Bill of \$${amount} paid successfully. New balance: \$${balance}");
+    break;
+  }
+  return balance;
+}
+
+double TransferMoney(double balance) {
+  print("Transfer Money");
+  print("Enter recipient account number (or press X and enter to cancel):");
+  while (true) {
+    String? account = stdin.readLineSync();
+    if (account == null) continue;
+    account = account.trim();
+    if (account.toLowerCase() == 'x') {
+      print("Transfer cancelled. Returning to main menu.");
+      return balance;
+    }
+    if (account.isEmpty || int.tryParse(account) == null) {
+      print("INVALID ACCOUNT NUMBER. Please enter a valid numeric account number.");
+      continue;
+    }
+    print("Enter amount to transfer:");
+    String? input = stdin.readLineSync();
+    if (input == null) continue;
+    input = input.trim();
+    double? amount = double.tryParse(input);
+    if (amount == null || amount <= 0) {
+      print("INVALID AMOUNT.");
+      continue;
+    }
+    if (amount > balance) {
+      print("INSUFFICIENT FUNDS. Your current balance is: \$${balance}");
+      continue;
+    }
+    balance -= amount;
+    print("Transferred \$${amount} to account $account. New balance: \$${balance}");
+    break;
+  }
+  return balance;
 }
