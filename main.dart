@@ -28,7 +28,8 @@ void login() {
 }
 
 void mainPortal() {
-  print('Welcome to the ATM Project!');
+  int balance = 1000; // Example balance, you can change it as needed
+  print('Welcome to the ATM Portal!');
   print("This project is for educational purposes only.");
 
   print("Please select an option:");
@@ -44,10 +45,10 @@ void mainPortal() {
       CheckBalance();
       break;
     case 2:
-      DepositMoney();
+      balance = DepositMoney(balance);
       break;
     case 3:
-      WithdrawMoney();
+      balance = WithdrawMoney(balance);
       break;
     case 4:
       print("Exiting...");
@@ -64,12 +65,64 @@ void CheckBalance() {
   print("Your current balance is: \$${balance}");
 }
 
-void DepositMoney() {
-  print("Deposit Money");
-  // Code to deposit money
+// noticed that the DepositMoney and WithdrawMoney functions are mostly the same
+// so I tried to refactor them to reduce redundancy
+int handleTransaction(int balance, bool transactionType) {
+  String transactionName = transactionType ? "Deposit" : "Withdraw";
+  String transactionVerb = transactionType ? "Deposited" : "Withdrawed";
+
+  print("$transactionName Money");
+
+  while (true) {
+    print(
+      "Enter the amount to $transactionName (or press X and enter to cancel):",
+    );
+    String? input = stdin.readLineSync();
+
+    if (input == null) {
+      continue; // skip if null input
+    }
+
+    input = input.trim();
+
+    if (input.toLowerCase() == 'x') {
+      print("Transaction cancelled. Returning to main menu.");
+      break;
+    }
+
+    int? amount = int.tryParse(input);
+
+    if (amount == null || amount <= 0) {
+      stdout.write('\x1B[1A'); // Move cursor up
+      stdout.write('\x1B[2K'); // Clear entire line
+      print("INVALID INPUT.");
+      continue;
+    }
+
+    if (!transactionType && amount > balance) {
+      stdout.write('\x1B[1A');
+      stdout.write('\x1B[2K');
+      print("INSUFFICIENT FUNDS. Your current balance is: \$${balance}");
+      continue;
+    }
+
+    balance = transactionType ? balance + amount : balance - amount;
+
+    // adding success message for both deposit and withdraw
+    print(
+      "You have successfully $transactionVerb \$${amount}. Your new balance is: \$${balance}",
+    );
+
+    print("Transaction successful. Returning to main menu.");
+    break;
+  }
+  return balance;
 }
 
-void WithdrawMoney() {
-  print("Withdraw Money");
-  // Code to withdraw money
+int DepositMoney(int balance) {
+  return handleTransaction(balance, true);
+}
+
+int WithdrawMoney(int balance) {
+  return handleTransaction(balance, false);
 }
