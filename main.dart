@@ -28,46 +28,47 @@ void login() {
 }
 
 void mainPortal() {
-  int balance = 1000; // Example balance, you can change it as needed
+  double balance = 1000; // Example balance, you can change it as needed
   print('Welcome to the ATM Portal!');
   print("This project is for educational purposes only.");
 
-  print("Please select an option:");
-  print("1. Check Balance");
-  print("2. Deposit Money");
-  print("3. Withdraw Money");
-  print("4. Exit");
-
   // maybe add a while loop to keep the menu open until the user chooses to exit(?)
-  int? choice = int.tryParse(stdin.readLineSync()!);
-  switch (choice) {
-    case 1:
-      CheckBalance();
-      break;
-    case 2:
-      balance = DepositMoney(balance);
-      break;
-    case 3:
-      balance = WithdrawMoney(balance);
-      break;
-    case 4:
-      print("Exiting...");
-      break;
-    default:
-      print("Invalid choice. Please try again.");
+  while (true) {
+    print("Please select an option:");
+    print("1. Check Balance");
+    print("2. Deposit Money");
+    print("3. Withdraw Money");
+    print("4. Exit");
+
+    int? choice = int.tryParse(stdin.readLineSync()!);
+    switch (choice) {
+      case 1:
+        CheckBalance(balance);
+        break;
+      case 2:
+        balance = DepositMoney(balance);
+        break;
+      case 3:
+        balance = WithdrawMoney(balance);
+        break;
+      case 4:
+        print("Exiting...");
+        return;
+      default:
+        print("Invalid choice. Please try again.");
+    }
   }
 }
 
-void CheckBalance() {
+void CheckBalance(double balance) {
   print("Check Balance");
   // Code to check balance
-  double balance = 1000.00; // Example balance
   print("Your current balance is: \$${balance}");
 }
 
 // noticed that the DepositMoney and WithdrawMoney functions are mostly the same
 // so I tried to refactor them to reduce redundancy
-int handleTransaction(int balance, bool transactionType) {
+double handleTransaction(double balance, bool transactionType) {
   String transactionName = transactionType ? "Deposit" : "Withdraw";
   String transactionVerb = transactionType ? "Deposited" : "Withdrawed";
 
@@ -119,10 +120,10 @@ int handleTransaction(int balance, bool transactionType) {
   return balance;
 }
 
-int DepositMoney(int balance) {
+double DepositMoney(double balance) {
   return handleTransaction(balance, true);
 }
 
-int WithdrawMoney(int balance) {
+double WithdrawMoney(double balance) {
   return handleTransaction(balance, false);
 }
