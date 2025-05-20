@@ -1,16 +1,1 @@
-[
-  {
-    "name": "John Doe",
-    "age": 30,
-    "email": "johndoe@gmail.com",
-    "pin": 1234,
-    "balance": 1000
-  },
-  {
-    "name": "Jane Smith",
-    "age": 25,
-    "email": "janesmith@gmail.com",
-    "pin": 5678,
-    "balance": 2000
-  }
-]
+[{"name":"John Doe","age":30,"email":"johndoe@gmail.com","pin":8888,"balance":1000},{"name":"Jane Smith","age":25,"email":"janesmith@gmail.com","pin":5678,"balance":2000}]

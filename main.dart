@@ -56,7 +56,8 @@ void mainPortal(
     print("1. Check Balance");
     print("2. Deposit Money");
     print("3. Withdraw Money");
-    print("4. Exit");
+    print("4. Change PIN");
+    print("5. Exit");
 
     int? choice = int.tryParse(stdin.readLineSync() ?? '');
     switch (choice) {
@@ -78,6 +79,13 @@ void mainPortal(
         writeUserData(allUsers);
         break;
       case 4:
+        currentUser = ChangePin(currentUser);
+        // Update the user data in the list
+        updateUserInList(currentUser, allUsers);
+        // Save updated data back to file
+        writeUserData(allUsers);
+        break;
+      case 5:
         print("Thank you for using our ATM. Goodbye!");
         continueSession = false;
         break;
@@ -169,4 +177,59 @@ Map<String, dynamic> DepositMoney(Map<String, dynamic> user) {
 
 Map<String, dynamic> WithdrawMoney(Map<String, dynamic> user) {
   return handleTransaction(user, false);
+}
+
+// Function to change the user's PIN
+Map<String, dynamic> ChangePin(Map<String, dynamic> user) {
+  print("Change PIN");
+
+  // Verify current PIN first for security
+  print("For security, please enter your current PIN:");
+  String? currentPin = stdin.readLineSync();
+
+  if (currentPin == null ||
+      currentPin.isEmpty ||
+      currentPin != user['pin'].toString()) {
+    print("Invalid PIN. PIN change canceled.");
+    return user;
+  }
+
+  // Get new PIN
+  while (true) {
+    print("Enter your new PIN (4 digits):");
+    String? newPin = stdin.readLineSync();
+
+    if (newPin == null || newPin.isEmpty) {
+      print("Invalid input. Please try again.");
+      continue;
+    }
+
+    // Validate PIN format - should be numeric and ideally 4 digits
+    int? pinValue = int.tryParse(newPin);
+    if (pinValue == null) {
+      print("PIN must contain only numbers. Please try again.");
+      continue;
+    }
+
+    if (newPin.length != 4) {
+      print("PIN must be exactly 4 digits. Please try again.");
+      continue;
+    }
+
+    // Confirm new PIN
+    print("Confirm your new PIN:");
+    String? confirmPin = stdin.readLineSync();
+
+    if (confirmPin != newPin) {
+      print("PINs do not match. Please try again.");
+      continue;
+    }
+
+    // Update PIN
+    user['pin'] = pinValue;
+    print("Your PIN has been successfully changed!");
+    break;
+  }
+
+  return user;
 }
