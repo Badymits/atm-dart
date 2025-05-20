@@ -1,19 +1,34 @@
 import 'dart:io';
+import 'fileActions.dart';
 
 void main() {
-  login();
+  // Read user data from JSON file
+  final userData = readUserData();
+  if (userData.isEmpty) {
+    print("Failed to load user data. Exiting program.");
+    exit(1);
+  }
+
+  login(userData);
 }
 
-void login() {
-  var pin = '1234';
+void login(List<Map<String, dynamic>> userData) {
   int tries = 0;
 
   while (tries < 3) {
     stdout.write('Please enter your PIN:');
     String? enteredPin = stdin.readLineSync();
-    if (enteredPin == pin) {
-      print("\nLogin successful!");
-      mainPortal();
+
+    if (enteredPin == null || enteredPin.isEmpty) {
+      print("Invalid input. Please enter a PIN.");
+      continue;
+    }
+
+    final user = findUserByPin(enteredPin, userData);
+
+    if (user != null) {
+      print("\nLogin successful! Welcome, ${user['name']}!");
+      mainPortal(user, userData);
       return;
     } else {
       tries++;
@@ -27,49 +42,75 @@ void login() {
   }
 }
 
-void mainPortal() {
-  int balance = 1000; // Example balance, you can change it as needed
-  print('Welcome to the ATM Portal!');
-  print("This project is for educational purposes only.");
+void mainPortal(
+  Map<String, dynamic> currentUser,
+  List<Map<String, dynamic>> allUsers,
+) {
+  bool continueSession = true;
 
-  print("Please select an option:");
-  print("1. Check Balance");
-  print("2. Deposit Money");
-  print("3. Withdraw Money");
-  print("4. Exit");
+  while (continueSession) {
+    print('\nWelcome to the ATM Portal!');
+    print("This project is for educational purposes only.");
 
-  // maybe add a while loop to keep the menu open until the user chooses to exit(?)
-  int? choice = int.tryParse(stdin.readLineSync()!);
-  switch (choice) {
-    case 1:
-      CheckBalance();
-      break;
-    case 2:
-      balance = DepositMoney(balance);
-      break;
-    case 3:
-      balance = WithdrawMoney(balance);
-      break;
-    case 4:
-      print("Exiting...");
-      break;
-    default:
-      print("Invalid choice. Please try again.");
+    print("\nPlease select an option:");
+    print("1. Check Balance");
+    print("2. Deposit Money");
+    print("3. Withdraw Money");
+    print("4. Exit");
+
+    int? choice = int.tryParse(stdin.readLineSync() ?? '');
+    switch (choice) {
+      case 1:
+        CheckBalance(currentUser);
+        break;
+      case 2:
+        currentUser = DepositMoney(currentUser);
+        // Update the user data in the list
+        updateUserInList(currentUser, allUsers);
+        // Save updated data back to file
+        writeUserData(allUsers);
+        break;
+      case 3:
+        currentUser = WithdrawMoney(currentUser);
+        // Update the user data in the list
+        updateUserInList(currentUser, allUsers);
+        // Save updated data back to file
+        writeUserData(allUsers);
+        break;
+      case 4:
+        print("Thank you for using our ATM. Goodbye!");
+        continueSession = false;
+        break;
+      default:
+        print("Invalid choice. Please try again.");
+    }
   }
 }
 
-void CheckBalance() {
+void CheckBalance(Map<String, dynamic> user) {
   print("Check Balance");
-  // Code to check balance
-  double balance = 1000.00; // Example balance
-  print("Your current balance is: \$${balance}");
+  print("Your current balance is: \$${user['balance']}");
+}
+
+// Helper function to update user data in the list
+void updateUserInList(
+  Map<String, dynamic> user,
+  List<Map<String, dynamic>> allUsers,
+) {
+  final index = allUsers.indexWhere((u) => u['pin'] == user['pin']);
+  if (index != -1) {
+    allUsers[index] = user;
+  }
 }
 
 // noticed that the DepositMoney and WithdrawMoney functions are mostly the same
 // so I tried to refactor them to reduce redundancy
-int handleTransaction(int balance, bool transactionType) {
+Map<String, dynamic> handleTransaction(
+  Map<String, dynamic> user,
+  bool transactionType,
+) {
   String transactionName = transactionType ? "Deposit" : "Withdraw";
-  String transactionVerb = transactionType ? "Deposited" : "Withdrawed";
+  String transactionVerb = transactionType ? "Deposited" : "Withdrawn";
 
   print("$transactionName Money");
 
@@ -99,30 +140,33 @@ int handleTransaction(int balance, bool transactionType) {
       continue;
     }
 
-    if (!transactionType && amount > balance) {
+    if (!transactionType && amount > user['balance']) {
       stdout.write('\x1B[1A');
       stdout.write('\x1B[2K');
-      print("INSUFFICIENT FUNDS. Your current balance is: \$${balance}");
+      print(
+        "INSUFFICIENT FUNDS. Your current balance is: \$${user['balance']}",
+      );
       continue;
     }
 
-    balance = transactionType ? balance + amount : balance - amount;
+    user['balance'] =
+        transactionType ? user['balance'] + amount : user['balance'] - amount;
 
     // adding success message for both deposit and withdraw
     print(
-      "You have successfully $transactionVerb \$${amount}. Your new balance is: \$${balance}",
+      "You have successfully $transactionVerb \$${amount}. Your new balance is: \$${user['balance']}",
     );
 
     print("Transaction successful. Returning to main menu.");
     break;
   }
-  return balance;
+  return user;
 }
 
-int DepositMoney(int balance) {
-  return handleTransaction(balance, true);
+Map<String, dynamic> DepositMoney(Map<String, dynamic> user) {
+  return handleTransaction(user, true);
 }
 
-int WithdrawMoney(int balance) {
-  return handleTransaction(balance, false);
+Map<String, dynamic> WithdrawMoney(Map<String, dynamic> user) {
+  return handleTransaction(user, false);
 }
