@@ -1,6 +1,33 @@
 import 'dart:io';
 
 void main() {
+  login();
+}
+
+void login() {
+  var pin = '1234';
+  int tries = 0;
+
+  while (tries < 3) {
+    stdout.write('Please enter your PIN:');
+    String? enteredPin = stdin.readLineSync();
+    if (enteredPin == pin) {
+      print("\nLogin successful!");
+      mainPortal();
+      return;
+    } else {
+      tries++;
+      if (tries < 3) {
+        print("Incorrect PIN, please try again.\n");
+      } else {
+        print("Too many unsuccessful attempts. Exiting Program");
+        exit(0);
+      }
+    }
+  }
+}
+
+void mainPortal() {
   print('Welcome to the ATM Project!');
   print("This project is for educational purposes only.");
 
