@@ -111,7 +111,7 @@ void updateUserInList(
   Map<String, dynamic> user,
   List<Map<String, dynamic>> allUsers,
 ) {
-  final index = allUsers.indexWhere((u) => u['pin'] == user['pin']);
+  final index = allUsers.indexWhere((u) => u['pin'].toString() == user['pin'].toString());
   if (index != -1) {
     allUsers[index] = user;
   }
@@ -254,22 +254,22 @@ Map<String, dynamic> PayBills(Map<String, dynamic> user) {
 // Transfer Money logic
 Map<String, dynamic> TransferMoney(Map<String, dynamic> user, List<Map<String, dynamic>> allUsers) {
   print("Transfer Money");
-  print("Enter recipient PIN (or press X and enter to cancel):");
+  print("Enter recipient ACCOUNT NUMBER (or press X and enter to cancel):");
   while (true) {
-    String? recipientPin = stdin.readLineSync();
-    if (recipientPin == null) continue;
-    recipientPin = recipientPin.trim();
-    if (recipientPin.toLowerCase() == 'x') {
+    String? recipientAccount = stdin.readLineSync();
+    if (recipientAccount == null) continue;
+    recipientAccount = recipientAccount.trim();
+    if (recipientAccount.toLowerCase() == 'x') {
       print("Transfer cancelled. Returning to main menu.");
       break;
     }
-    if (recipientPin == user['pin'].toString()) {
+    if (recipientAccount == user['accountNumber'].toString()) {
       print("You cannot transfer to your own account.");
       continue;
     }
-    final recipient = findUserByPin(recipientPin, allUsers);
+    final recipient = findUserByAccountNumber(recipientAccount, allUsers);
     if (recipient == null) {
-      print("Recipient not found. Please enter a valid PIN.");
+      print("Recipient not found. Please enter a valid account number.");
       continue;
     }
     print("Enter amount to transfer:");
@@ -287,12 +287,13 @@ Map<String, dynamic> TransferMoney(Map<String, dynamic> user, List<Map<String, d
     }
     user['balance'] -= amount;
     recipient['balance'] += amount;
-    print("Transferred \$${amount} to ${recipient['name']}. New balance: \$${user['balance']}");
+    print("Transferred \$${amount} to ${recipient['name']} (Account: ${recipient['accountNumber']}). New balance: \$${user['balance']}");
     updateUserInList(recipient, allUsers);
     break;
   }
   return user;
 }
+
 // Function to change the user's PIN
 Map<String, dynamic> ChangePin(Map<String, dynamic> user) {
   print("Change PIN");

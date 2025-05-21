@@ -33,6 +33,17 @@ Map<String, dynamic>? findUserByPin(
   }
 }
 
+Map<String, dynamic>? findUserByAccountNumber(
+  String accountNumber,
+  List<Map<String, dynamic>> userData,
+) {
+  try {
+    return userData.firstWhere((user) => user['accountNumber'].toString() == accountNumber);
+  } catch (e) {
+    return null;
+  }
+}
+
 bool writeUserData(List<Map<String, dynamic>> userData) {
   try {
     final file = File('data.json');
