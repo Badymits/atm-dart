@@ -1,19 +1,34 @@
 import 'dart:io';
+import 'fileActions.dart';
 
 void main() {
-  login();
+  // Read user data from JSON file
+  final userData = readUserData();
+  if (userData.isEmpty) {
+    print("Failed to load user data. Exiting program.");
+    exit(1);
+  }
+
+  login(userData);
 }
 
-void login() {
-  var pin = '1234';
+void login(List<Map<String, dynamic>> userData) {
   int tries = 0;
 
   while (tries < 3) {
     stdout.write('Please enter your PIN:');
     String? enteredPin = stdin.readLineSync();
-    if (enteredPin == pin) {
-      print("\nLogin successful!");
-      mainPortal();
+
+    if (enteredPin == null || enteredPin.isEmpty) {
+      print("Invalid input. Please enter a PIN.");
+      continue;
+    }
+
+    final user = findUserByPin(enteredPin, userData);
+
+    if (user != null) {
+      print("\nLogin successful! Welcome, ${user['name']}!");
+      mainPortal(user, userData);
       return;
     } else {
       tries++;
@@ -27,58 +42,88 @@ void login() {
   }
 }
 
-void mainPortal() {
-  double balance = 1000; // balance changed to double for more accurate calculations
-  print('Welcome to the ATM Portal!');
-  print("This project is for educational purposes only.");
+void mainPortal(
+  Map<String, dynamic> currentUser,
+  List<Map<String, dynamic>> allUsers,
+) {
+  bool continueSession = true;
 
-  // maybe add a while loop to keep the menu open until the user chooses to exit(?)
-  while (true) {
-    print("Please select an option:");
+  while (continueSession) {
+    print('\nWelcome to the ATM Portal!');
+    print("This project is for educational purposes only.");
+
+    print("\nPlease select an option:");
     print("1. Check Balance");
     print("2. Deposit Money");
     print("3. Withdraw Money");
     print("4. Pay Bills");
     print("5. Transfer Money");
-    print("6. Exit");
+    print("6. Change PIN");
+    print("7. Exit");
 
-    int? choice = int.tryParse(stdin.readLineSync()!);
+    int? choice = int.tryParse(stdin.readLineSync() ?? '');
     switch (choice) {
       case 1:
-        CheckBalance(balance);
+        CheckBalance(currentUser);
         break;
       case 2:
-        balance = DepositMoney(balance);
+        currentUser = DepositMoney(currentUser);
+        updateUserInList(currentUser, allUsers);
+        writeUserData(allUsers);
         break;
       case 3:
-        balance = WithdrawMoney(balance);
+        currentUser = WithdrawMoney(currentUser);
+        updateUserInList(currentUser, allUsers);
+        writeUserData(allUsers);
         break;
       case 4:
-        balance = PayBills(balance);
+        currentUser = PayBills(currentUser);
+        updateUserInList(currentUser, allUsers);
+        writeUserData(allUsers);
         break;
       case 5:
-        balance = TransferMoney(balance);
+        currentUser = TransferMoney(currentUser, allUsers);
+        updateUserInList(currentUser, allUsers);
+        writeUserData(allUsers);
         break;
       case 6:
-        print("Exiting...");
-        return;
+        currentUser = ChangePin(currentUser);
+        updateUserInList(currentUser, allUsers);
+        writeUserData(allUsers);
+        break;
+      case 7:
+        print("Thank you for using our ATM. Goodbye!");
+        continueSession = false;
+        break;
       default:
         print("Invalid choice. Please try again.");
     }
   }
 }
 
-void CheckBalance(double balance) {
+void CheckBalance(Map<String, dynamic> user) {
   print("Check Balance");
-  // Code to check balance
-  print("Your current balance is: \$${balance}");
+  print("Your current balance is: \$${user['balance']}");
 }
 
-// noticed that the DepositMoney and WithdrawMoney functions are mostly the same
-// so I tried to refactor them to reduce redundancy
-double handleTransaction(double balance, bool transactionType) {
+// Helper function to update user data in the list
+void updateUserInList(
+  Map<String, dynamic> user,
+  List<Map<String, dynamic>> allUsers,
+) {
+  final index = allUsers.indexWhere((u) => u['pin'].toString() == user['pin'].toString());
+  if (index != -1) {
+    allUsers[index] = user;
+  }
+}
+
+// Deposit/Withdraw logic
+Map<String, dynamic> handleTransaction(
+  Map<String, dynamic> user,
+  bool transactionType,
+) {
   String transactionName = transactionType ? "Deposit" : "Withdraw";
-  String transactionVerb = transactionType ? "Deposited" : "Withdrawed";
+  String transactionVerb = transactionType ? "Deposited" : "Withdrawn";
 
   print("$transactionName Money");
 
@@ -99,44 +144,43 @@ double handleTransaction(double balance, bool transactionType) {
       break;
     }
 
-    int? amount = int.tryParse(input);
+    double? amount = double.tryParse(input);
 
     if (amount == null || amount <= 0) {
-      stdout.write('\x1B[1A'); // Move cursor up
-      stdout.write('\x1B[2K'); // Clear entire line
       print("INVALID INPUT.");
       continue;
     }
 
-    if (!transactionType && amount > balance) {
-      stdout.write('\x1B[1A');
-      stdout.write('\x1B[2K');
-      print("INSUFFICIENT FUNDS. Your current balance is: \$${balance}");
+    if (!transactionType && amount > user['balance']) {
+      print(
+        "INSUFFICIENT FUNDS. Your current balance is: \$${user['balance']}",
+      );
       continue;
     }
 
-    balance = transactionType ? balance + amount : balance - amount;
+    user['balance'] =
+        transactionType ? user['balance'] + amount : user['balance'] - amount;
 
-    // adding success message for both deposit and withdraw
     print(
-      "You have successfully $transactionVerb \$${amount}. Your new balance is: \$${balance}",
+      "You have successfully $transactionVerb \$${amount}. Your new balance is: \$${user['balance']}",
     );
 
     print("Transaction successful. Returning to main menu.");
     break;
   }
-  return balance;
+  return user;
 }
 
-double DepositMoney(double balance) {
-  return handleTransaction(balance, true);
+Map<String, dynamic> DepositMoney(Map<String, dynamic> user) {
+  return handleTransaction(user, true);
 }
 
-double WithdrawMoney(double balance) {
-  return handleTransaction(balance, false);
+Map<String, dynamic> WithdrawMoney(Map<String, dynamic> user) {
+  return handleTransaction(user, false);
 }
 
-double PayBills(double balance) {
+// Pay Bills logic
+Map<String, dynamic> PayBills(Map<String, dynamic> user) {
   print("Pay Bills");
   print("Enter the bill amount to pay (or press X and enter to cancel):");
   while (true) {
@@ -193,30 +237,36 @@ double PayBills(double balance) {
       print("Bill payment cancelled. Returning to main menu.");
       break;
     }
-    if (amount > balance) {
-      print("INSUFFICIENT FUNDS. Your current balance is: \$${balance}");
+    if (amount > user['balance']) {
+      print("INSUFFICIENT FUNDS. Your current balance is: \$${user['balance']}");
       continue;
     }
-    balance -= amount;
-    print("Bill of \$${amount} paid successfully. New balance: \$${balance}");
+    user['balance'] -= amount;
+    print("Bill of \$${amount} paid successfully. New balance: \$${user['balance']}");
     break;
   }
-  return balance;
+  return user;
 }
 
-double TransferMoney(double balance) {
+// Transfer Money logic
+Map<String, dynamic> TransferMoney(Map<String, dynamic> user, List<Map<String, dynamic>> allUsers) {
   print("Transfer Money");
-  print("Enter recipient account number (or press X and enter to cancel):");
+  print("Enter recipient PIN (or press X and enter to cancel):");
   while (true) {
-    String? account = stdin.readLineSync();
-    if (account == null) continue;
-    account = account.trim();
-    if (account.toLowerCase() == 'x') {
+    String? recipientPin = stdin.readLineSync();
+    if (recipientPin == null) continue;
+    recipientPin = recipientPin.trim();
+    if (recipientPin.toLowerCase() == 'x') {
       print("Transfer cancelled. Returning to main menu.");
-      return balance;
+      break;
     }
-    if (account.isEmpty || int.tryParse(account) == null) {
-      print("INVALID ACCOUNT NUMBER. Please enter a valid numeric account number.");
+    if (recipientPin == user['pin'].toString()) {
+      print("You cannot transfer to your own account.");
+      continue;
+    }
+    final recipient = findUserByPin(recipientPin, allUsers);
+    if (recipient == null) {
+      print("Recipient not found. Please enter a valid PIN.");
       continue;
     }
     print("Enter amount to transfer:");
@@ -228,13 +278,70 @@ double TransferMoney(double balance) {
       print("INVALID AMOUNT.");
       continue;
     }
-    if (amount > balance) {
-      print("INSUFFICIENT FUNDS. Your current balance is: \$${balance}");
+    if (amount > user['balance']) {
+      print("INSUFFICIENT FUNDS. Your current balance is: \$${user['balance']}");
       continue;
     }
-    balance -= amount;
-    print("Transferred \$${amount} to account $account. New balance: \$${balance}");
+    user['balance'] -= amount;
+    recipient['balance'] += amount;
+    print("Transferred \$${amount} to ${recipient['name']}. New balance: \$${user['balance']}");
+    updateUserInList(recipient, allUsers);
     break;
   }
-  return balance;
+  return user;
+}
+
+// Change PIN logic
+Map<String, dynamic> ChangePin(Map<String, dynamic> user) {
+  print("Change PIN");
+
+  // Verify current PIN first for security
+  print("For security, please enter your current PIN:");
+  String? currentPin = stdin.readLineSync();
+
+  if (currentPin == null ||
+      currentPin.isEmpty ||
+      currentPin != user['pin'].toString()) {
+    print("Invalid PIN. PIN change canceled.");
+    return user;
+  }
+
+  // Get new PIN
+  while (true) {
+    print("Enter your new PIN (4 digits):");
+    String? newPin = stdin.readLineSync();
+
+    if (newPin == null || newPin.isEmpty) {
+      print("Invalid input. Please try again.");
+      continue;
+    }
+
+    // Validate PIN format - should be numeric and ideally 4 digits
+    int? pinValue = int.tryParse(newPin);
+    if (pinValue == null) {
+      print("PIN must contain only numbers. Please try again.");
+      continue;
+    }
+
+    if (newPin.length != 4) {
+      print("PIN must be exactly 4 digits. Please try again.");
+      continue;
+    }
+
+    // Confirm new PIN
+    print("Confirm your new PIN:");
+    String? confirmPin = stdin.readLineSync();
+
+    if (confirmPin != newPin) {
+      print("PINs do not match. Please try again.");
+      continue;
+    }
+
+    // Update PIN
+    user['pin'] = pinValue;
+    print("Your PIN has been successfully changed!");
+    break;
+  }
+
+  return user;
 }
