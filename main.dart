@@ -111,13 +111,14 @@ void updateUserInList(
   Map<String, dynamic> user,
   List<Map<String, dynamic>> allUsers,
 ) {
-  final index = allUsers.indexWhere((u) => u['pin'].toString() == user['pin'].toString());
+  final index = allUsers.indexWhere((u) => u['pin'] == user['pin']);
   if (index != -1) {
     allUsers[index] = user;
   }
 }
 
-// Deposit/Withdraw logic
+// noticed that the DepositMoney and WithdrawMoney functions are mostly the same
+// so I tried to refactor them to reduce redundancy
 Map<String, dynamic> handleTransaction(
   Map<String, dynamic> user,
   bool transactionType,
@@ -152,6 +153,8 @@ Map<String, dynamic> handleTransaction(
     }
 
     if (!transactionType && amount > user['balance']) {
+      stdout.write('\x1B[1A');
+      stdout.write('\x1B[2K');
       print(
         "INSUFFICIENT FUNDS. Your current balance is: \$${user['balance']}",
       );
@@ -290,8 +293,7 @@ Map<String, dynamic> TransferMoney(Map<String, dynamic> user, List<Map<String, d
   }
   return user;
 }
-
-// Change PIN logic
+// Function to change the user's PIN
 Map<String, dynamic> ChangePin(Map<String, dynamic> user) {
   print("Change PIN");
 
